@@ -7,12 +7,13 @@ defmodule MAIN do
   def start_nodes(n) when n<1 do
     IO.puts "all nodes created"
     send_message("node_"<>Integer.to_string(5))
+    IO.gets ""
   end
 
   def start_nodes(n) do
 
     node_name = "node_" <> Integer.to_string(n)
-    GenServer.start_link(__MODULE__, [], name: String.to_atom node_name)
+    GenServer.start_link(__MODULE__, [], name: String.to_atom(node_name))
     start_nodes(n-1)
   end
 
@@ -26,11 +27,10 @@ defmodule MAIN do
 
   # servwe callbacks
 
-  def handle_cast({:send_message ,new_message},messages) do
-  
+  def handle_cast({:send_message ,new_message},state) do  
     IO.puts "got message::"<>new_message  
     IO.inspect self()
-    {:no_reply,messages}
+    {:no_reply,state}
   end
 
 end
