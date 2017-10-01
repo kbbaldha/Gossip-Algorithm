@@ -1,7 +1,7 @@
 defmodule MAIN do
   use GenServer
   def main(args) do
-      start_nodes(30,30)
+      start_nodes(36,36)
   end
 
   def mesh_list(node_id,cur_node_id,lst) when node_id<1 do
@@ -24,7 +24,7 @@ defmodule MAIN do
     cur_node_id = Map.get(state,"id")
     neighbours = get_mesh_neighbours(total_nodes,cur_node_id)
     state = Map.put(state,"neighbours",neighbours)
-    #IO.inspect state
+    IO.inspect state
     state
   end
   ##end mesh topology
@@ -34,17 +34,7 @@ defmodule MAIN do
   
   def get_line_neighbours(total_nodes,cur_node_id) do
     lst = []
-    # if(cur_node_id == 1) do
-    #   lst = [cur_node_id + 1|lst]
     
-    # else if(cur_node_id == total_nodes) do
-    #   lst = [cur_node_id - 1| lst]
-    
-    # else do
-    #   lst = [cur_node_id+1|lst]
-    #   lst = [cur_node_id-1|lst]
-    # end
-
     cond do
       cur_node_id == 1 -> lst = [cur_node_id + 1|lst]
       cur_node_id == 1 -> lst = [cur_node_id + 1|lst]
@@ -83,21 +73,12 @@ defmodule MAIN do
     end
 
     # ##side neighbours
-    # if(column_number == 0) do ## last column
-    #    lst = [cur_node_id - 1|lst]
-    
-    # else if(column_number == 1)  
-    #    lst = [cur_node_id+1|lst]
-    
-    # else 
-    #   lst = [cur_node_id - 1|lst]
-    #   lst = [cur_node_id + 1|lst]
-    # end
+   
     cond do
       column_number == 0 -> lst = [cur_node_id - 1|lst]
       column_number == 1 -> lst = [cur_node_id+1|lst]
       true -> lst = [cur_node_id - 1|lst]
-      lst = [cur_node_id + 1|lst]
+              lst = [cur_node_id + 1|lst]
     end
     lst
   end
@@ -145,7 +126,8 @@ defmodule MAIN do
 
   def start_nodes(n,total) when n<1 do
     IO.puts "all nodes created"
-    send_message("node_"<>Integer.to_string(10))
+    ##send_message("node_"<>Integer.to_string(5))
+    GenServer.call(String.to_atom("node_"<>Integer.to_string(5)), {:receive_msg, "keyur here"})
     IO.gets ""
   end
 
@@ -162,21 +144,27 @@ defmodule MAIN do
     #node_name = "node_" <> Integer.to_string(elem(args,0))
     node_id = elem(args,0)
     map =  %{"id" => node_id,"total_nodes" => total_nodes, "neighbours" => []}    
-    #state = build_mesh_topology(map)
-    state = build_2D_topology(map)
+    state = build_mesh_topology(map)
+    #state = build_2D_topology(map)
     {:ok,state}
   end
 
-  def send_message(node_name) do
-    GenServer.call(String.to_atom(node_name), {:send_message, "keyur here"})
+  def send_message(neighbours) do
+
+    node_id = Enum.random(neighbours)
+    node_name = "node_"<>Integer.to_string(node_id)
+    GenServer.call(String.to_atom(node_name), {:receive_msg, "keyur here"})
+    :timer.sleep(1000)
+    send_message(neighbours)
   end
 
+   
   # servwe callbacks
 
   def handle_call({:send_message ,new_message},_from,state) do  
     IO.puts "got message::"<>new_message  
     IO.inspect self()
-    GenServer.call(String.to_atom("node_8"), {:trial, "keyur next node"})
+    GenServer.call(String.to_atom("node_30"), {:trial, "keyur next node"})
     {:reply,state,state}
   end
 
@@ -189,6 +177,39 @@ defmodule MAIN do
     {:reply,state,state}
   end
 
+
+  def handle_call({:receive_msg, msg},_from,state) do
+   # IO.puts "neighbourrrrrrrrrrrrrrrrrrrrrs" 
+   # IO.inspect state
+     neighbours = Map.get(state,"neighbours")
+     #n_length = length(neighbours)
+     
+     
+     if(Map.get(state,"send_msg_process") == nil) do
+     
+        send_msg_pid = spawn fn -> send_message(neighbours) end 
+        state = Map.put(state,"send_msg_process",send_msg_pid)  
+        
+     end
+
+    if(Map.get(state,"receive_msg_count") == nil) do
+     # IO.puts "no keyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
+        state = Map.put(state,"receive_msg_count",0)
+        IO.inspect state
+    end
+    receive_msg_count = Map.get(state,"receive_msg_count")
+    #IO.puts "sssssssssssssssss::::::::"
+    #IO.puts receive_msg_count
+    receive_msg_count = receive_msg_count + 1
+    state = Map.put(state,"receive_msg_count",receive_msg_count)
+
+    if(receive_msg_count >= 10) do
+      ## Kill process if alive
+      
+    end
+    IO.puts "NOde : "<> Integer.to_string(Map.get(state,"id")) <> " received mesg : " <> Integer.to_string(receive_msg_count)
+    {:reply,state,state}
+  end
   
 
 end
