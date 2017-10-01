@@ -24,7 +24,7 @@ defmodule MAIN do
     cur_node_id = Map.get(state,"id")
     neighbours = get_mesh_neighbours(total_nodes,cur_node_id)
     state = Map.put(state,"neighbours",neighbours)
-    IO.inspect state
+    #IO.inspect state
     state
   end
   ##end mesh topology
@@ -92,7 +92,7 @@ defmodule MAIN do
     cur_node_id = Map.get(state,"id")
     neighbours = get_2D_neighbours(dimension,cur_node_id)
     state = Map.put(state,"neighbours",neighbours)
-    IO.inspect state
+    #IO.inspect state
     state
   end
 
@@ -139,7 +139,7 @@ defmodule MAIN do
   end
 
   def init(args) do
-    IO.inspect self()
+    #IO.inspect self()
     total_nodes = elem(args,1)
     #node_name = "node_" <> Integer.to_string(elem(args,0))
     node_id = elem(args,0)
@@ -153,8 +153,14 @@ defmodule MAIN do
 
     node_id = Enum.random(neighbours)
     node_name = "node_"<>Integer.to_string(node_id)
-    GenServer.call(String.to_atom(node_name), {:receive_msg, "keyur here"})
-    :timer.sleep(1000)
+    pid  = Process.whereis(String.to_atom(node_name))
+    if(pid == nil) do
+      send_message(neighbours)
+    end
+    if(Process.alive?(pid) == true) do
+      GenServer.call(String.to_atom(node_name), {:receive_msg, "keyur here"}) 
+    end
+    :timer.sleep(150)
     send_message(neighbours)
   end
 
@@ -195,7 +201,7 @@ defmodule MAIN do
     if(Map.get(state,"receive_msg_count") == nil) do
      # IO.puts "no keyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy"
         state = Map.put(state,"receive_msg_count",0)
-        IO.inspect state
+        #IO.inspect state
     end
     receive_msg_count = Map.get(state,"receive_msg_count")
     #IO.puts "sssssssssssssssss::::::::"
@@ -205,9 +211,11 @@ defmodule MAIN do
 
     if(receive_msg_count >= 10) do
       ## Kill process if alive
-      
+      IO.puts "kill process :: " <> Integer.to_string(Map.get(state,"id"))
+      #Process.exit(Map.get(state,"send_msg_process"), :normal)      
+      Process.exit(self(), :normal)      
     end
-    IO.puts "NOde : "<> Integer.to_string(Map.get(state,"id")) <> " received mesg : " <> Integer.to_string(receive_msg_count)
+    #IO.puts "NOde : "<> Integer.to_string(Map.get(state,"id")) <> " received mesg : " <> Integer.to_string(receive_msg_count)
     {:reply,state,state}
   end
   
