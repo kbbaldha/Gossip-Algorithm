@@ -15,16 +15,14 @@ defmodule MAIN do
      mesh_list(node_id-1,cur_node_id,lst)
   end
 
+  def get_mesh_neighbours(node_id,cur_node_id) do
+     mesh_list(node_id,cur_node_id,[])
+  end
+
   def build_mesh_topology(state) do
     total_nodes = Map.get(state,"total_nodes")
     cur_node_id = Map.get(state,"id")
- 
-    
-    Map.put(state,"neighbours",[])
-
-    neighbours = mesh_list(total_nodes,cur_node_id,[])
-    #IO.inspect neighbours
-    
+    neighbours = get_mesh_neighbours(total_nodes,cur_node_id)
     state = Map.put(state,"neighbours",neighbours)
     #IO.inspect state
     state
@@ -32,7 +30,75 @@ defmodule MAIN do
   ##end mesh topology
 
 
+  ## line topology
   
+  def get_line_neighbours(total_nodes,cur_node_id) do
+    lst = []
+    if(cur_node_id == 1) do
+      lst = [cur_node_id + 1|lst]
+    end
+    else if(cur_node_id == total_nodes) 
+      lst = [cur_node_id - 1| lst]
+    
+    else 
+      lst = [cur_node_id+1|lst]
+      lst = [cur_node_id-1|lst]
+    end
+    lst
+  end
+  
+  
+  def build_line_topology(state) do
+    total_nodes = Map.get(state,"total_nodes")
+    cur_node_id = Map.get(state,"id")
+    neighbours = get_line_neighbours(total_nodes,cur_node_id)
+    state = Map.put(state,"neighbours",neighbours)
+    #IO.inspect state
+    state
+  end
+
+
+  ## end line topology
+
+  ## 2D grid
+
+  
+  def get_2D_neighbours(dimension,cur_node_id) do
+    column_number = round :math.fmod cur_node_id,dimension
+    top = cur_node_id - dimension
+    lst = [] 
+    if(top>0) do
+      lst = [top|lst]
+    end 
+    down = cur_node_id + dimension
+    if(down < dimension*dimension)do
+      lst = lst[down|lst]
+    end
+
+    ##side neighbours
+    if(column_number == 0) do ## last column
+       lst = [cur_node_id - 1|lst]
+    else if(column_number == 1)
+       lst = [cur_node_id+1|lst]
+    else 
+      lst = [cur_node_id - 1|lst]
+      lst = [cur_node_id + 1|lst]
+    end
+    lst
+  end
+
+  def build_2D_topology(state) do
+    total_nodes = Map.get(state,"total_nodes")
+    dimension = round :math.ceil :math.sqrt(total_nodes)
+    Math.put(state,"total_nodes",dimension*dimension)
+    cur_node_id = Map.get(state,"id")
+    neighbours = get_2D_neighbours(total_nodes,cur_node_id)
+    state = Map.put(state,"neighbours",neighbours)
+    #IO.inspect state
+    state
+  end
+
+  ##2D grid ends
   def start_nodes(n,total) when n<1 do
     IO.puts "all nodes created"
     send_message("node_"<>Integer.to_string(10))
