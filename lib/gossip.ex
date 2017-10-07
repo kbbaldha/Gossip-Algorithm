@@ -1,11 +1,11 @@
 defmodule MAIN do
   use GenServer
   def main(args) do
-      start_nodes(31,31)
+      start_nodes(39,39)
   end
 
   def print_state do
-    for x <- 1..31 do
+    for x <- 1..39 do
       node_name = "node_" <> Integer.to_string(x)
       pid = Process.whereis(String.to_atom(node_name))
       #IO.puts "inside  print_state "
@@ -14,7 +14,10 @@ defmodule MAIN do
       #end
       #IO.puts "hello"
       if(pid != nil && Process.alive?(pid) == true) do
-         GenServer.call(String.to_atom(node_name),{:get_state, "keyur here"}) |> IO.inspect
+         state = GenServer.call(String.to_atom(node_name),{:get_state, "keyur here"}) 
+         IO.puts node_name
+         Process.alive?(Map.get(state,"send_msg_process")) |> IO.inspect
+         #|> IO.inspect
       end
     end
   end
@@ -151,6 +154,7 @@ defmodule MAIN do
   def start_nodes(n,total) do
 
     node_name = "node_" <> Integer.to_string(n)
+    IO.puts node_name
     GenServer.start_link(__MODULE__, {n,total}, name: String.to_atom(node_name))
     start_nodes(n-1,total)
   end
@@ -161,36 +165,36 @@ defmodule MAIN do
     #node_name = "node_" <> Integer.to_string(elem(args,0))
     node_id = elem(args,0)
     map =  %{"id" => node_id,"total_nodes" => total_nodes, "neighbours" => []}    
-    #state = build_mesh_topology(map)
+    state = build_mesh_topology(map)
     #state = build_2D_topology(map)
-    state = build_line_topology(map)
+    #state = build_line_topology(map)
     {:ok,state}
   end
 
   def send_message(neighbours) do
 
     if(length(neighbours) == 0) do
-      Process.exit(self(), :normal) 
+     # Process.exit(self(), :normal) 
     end
     node_id = Enum.random(neighbours)
     node_name = "node_"<>Integer.to_string(node_id)
-    pid  = Process.whereis(String.to_atom(node_name))
+    #pid  = Process.whereis(String.to_atom(node_name))
     # if(pid == nil) do
     #   neighbours = List.delete(neighbours,node_id)
     #   send_message(neighbours)
       
     # end
  
-    if(pid != nil && Process.alive?(pid) == true) do
+    #if(pid != nil && Process.alive?(pid) == true) do
       #spawn fn -> GenServer.call(String.to_atom(node_name), {:receive_msg, "keyur here"}) end
       GenServer.call(String.to_atom(node_name), {:receive_msg, "keyur here"})
-    else 
-      neighbours = List.delete(neighbours,node_id)
+    #else 
+     # neighbours = List.delete(neighbours,node_id)
       #IO.inspect neighbours
-    end
+    #end
   
 
-    #:timer.sleep(350)
+    #:timer.sleep(250)
     send_message(neighbours)
   end
 
@@ -244,11 +248,12 @@ defmodule MAIN do
     receive_msg_count = receive_msg_count + 1
     state = Map.put(state,"receive_msg_count",receive_msg_count)
 
-    if(receive_msg_count >= 10) do
+    if(receive_msg_count == 10) do
       ## Kill process if alive
-      IO.puts "kill process :: " <> Integer.to_string(Map.get(state,"id"))
-      Process.exit(Map.get(state,"send_msg_process"), :normal)      
-      Process.exit(self(), :normal)    
+      IO.puts "kill process :: " <> Integer.to_string(Map.get(state,"id")) <>"\n"
+      Process.exit(Map.get(state,"send_msg_process"), :kill) 
+      #|> IO.inspect     
+      #Process.exit(self(), :normal)    
       #GenServer.stop(String.to_atom("node_"<>Integer.to_string(node_id)),:normal)  |> IO.inspect 
     end
     #IO.puts "NOde : "<> Integer.to_string(Map.get(state,"id")) <> " received mesg : " <> Integer.to_string(receive_msg_count)
